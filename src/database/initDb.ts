@@ -7,7 +7,7 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 async function initDatabase() {
-  console.log('🚀 Conectando a PostgreSQL e inicializando tablas y datos semilla...');
+  console.log('[INIT] Conectando a PostgreSQL e inicializando tablas y datos semilla...');
   const client = await pool.connect();
 
   try {
@@ -15,18 +15,18 @@ async function initDatabase() {
     const seedPath = path.join(__dirname, 'seed.sql');
 
     const schemaSql = fs.readFileSync(schemaPath, 'utf8');
-    console.log('📄 Ejecutando schema.sql...');
+    console.log('[SQL] Ejecutando schema.sql...');
     await client.query(schemaSql);
-    console.log('✅ Esquema y tablas creadas exitosamente.');
+    console.log('[OK] Esquema y tablas creadas exitosamente.');
 
     const seedSql = fs.readFileSync(seedPath, 'utf8');
-    console.log('🌱 Ejecutando seed.sql...');
+    console.log('[SQL] Ejecutando seed.sql...');
     await client.query(seedSql);
-    console.log('✅ Datos iniciales insertados exitosamente.');
+    console.log('[OK] Datos iniciales insertados exitosamente.');
 
-    console.log('\n🎉 Base de datos lista para operar con PolloPOS.');
+    console.log('\n[SUCCESS] Base de datos lista para operar con PolloPOS.');
   } catch (error) {
-    console.error('❌ Error al inicializar la base de datos:', error);
+    console.error('[ERROR] Error al inicializar la base de datos:', error);
     process.exit(1);
   } finally {
     client.release();

@@ -2,15 +2,18 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { UserRepository } from '../repositories/user.repository.js';
+import { ShiftRepository } from '../repositories/shift.repository.js';
 import { AppError } from '../middlewares/error.middleware.js';
 import { ENV } from '../config/env.js';
 import { UserPayload } from '../middlewares/auth.middleware.js';
 
 export class AuthService {
   private userRepo: UserRepository;
+  private shiftRepo: ShiftRepository;
 
   constructor() {
     this.userRepo = new UserRepository();
+    this.shiftRepo = new ShiftRepository();
   }
 
   private generateToken(user: {
@@ -51,6 +54,8 @@ export class AuthService {
     }
 
     const token = this.generateToken(user);
+    const activeShift = await this.shiftRepo.findActiveByUserId(user.usuario_id);
+
     return {
       token,
       usuario: {
@@ -59,7 +64,8 @@ export class AuthService {
         nombre_completo: user.nombre_completo,
         sucursal_id: user.sucursal_id,
         rol: user.rol_nombre
-      }
+      },
+      turno_activo: activeShift || null
     };
   }
 
@@ -75,6 +81,8 @@ export class AuthService {
         const isMatch = await bcrypt.compare(pin, user.pin_rapido);
         if (isMatch) {
           const token = this.generateToken(user);
+          const activeShift = await this.shiftRepo.findActiveByUserId(user.usuario_id);
+
           return {
             token,
             usuario: {
@@ -83,7 +91,8 @@ export class AuthService {
               nombre_completo: user.nombre_completo,
               sucursal_id: user.sucursal_id,
               rol: user.rol_nombre
-            }
+            },
+            turno_activo: activeShift || null
           };
         }
       }

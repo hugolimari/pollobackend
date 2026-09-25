@@ -53,6 +53,46 @@ export class ProductController {
     }
   }
 
+  static async getById(req: Request, res: Response, next: NextFunction) {
+    try {
+      const productoId = parseInt(req.params.id, 10);
+      const product = await productService.getProductById(productoId);
+      return res.json({
+        success: true,
+        producto: product
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async create(req: Request, res: Response, next: NextFunction) {
+    try {
+      const product = await productService.createProduct(req.body);
+      return res.status(201).json({
+        success: true,
+        mensaje: 'Producto creado exitosamente en el catálogo',
+        producto: product
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async update(req: Request, res: Response, next: NextFunction) {
+    try {
+      const productoId = parseInt(req.params.id, 10);
+      const updated = await productService.updateProduct(productoId, req.body);
+      return res.json({
+        success: true,
+        mensaje: 'Producto actualizado exitosamente',
+        producto: updated
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async toggleAgotado(req: Request, res: Response, next: NextFunction) {
     try {
       const productoId = parseInt(req.params.id, 10);

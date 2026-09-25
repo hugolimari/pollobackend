@@ -43,6 +43,8 @@ export class PaymentService {
 
     const totalAPagar = parseFloat(String(order.total));
     let montoRecibido = dto.monto_recibido !== undefined ? dto.monto_recibido : totalAPagar;
+    let montoEfectivo = 0;
+    let montoDigital = 0;
     let vuelto = 0;
 
     if (dto.metodo_pago === 'efectivo') {
@@ -53,9 +55,48 @@ export class PaymentService {
         );
       }
       vuelto = parseFloat((montoRecibido - totalAPagar).toFixed(2));
-    } else {
+      montoEfectivo = totalAPagar;
+      montoDigital = 0;
+    } else if (dto.metodo_pago === 'tarjeta' || dto.metodo_pago === 'qr') {
       montoRecibido = totalAPagar;
+      montoEfectivo = 0;
+      montoDigital = totalAPagar;
       vuelto = 0;
+    } else if (dto.metodo_pago === 'mixto') {
+      // 1. Verificar si vienen los montos explícitos en el DTO
+      if (dto.monto_efectivo !== undefined && dto.monto_digital !== undefined) {
+        montoEfectivo = parseFloat(String(dto.monto_efectivo));
+        montoDigital = parseFloat(String(dto.monto_digital));
+      } else if (dto.referencia) {
+        // 2. Extraer de la referencia formateada (ej. MIXTO|EF:20.00|DIG:21.40)
+        const ref = dto.referencia;
+        const efMatch = ref.match(/EF:([0-9]+(?:\.[0-9]+)?)/i);
+        const digMatch = ref.match(/DIG:([0-9]+(?:\.[0-9]+)?)/i);
+
+        if (efMatch && digMatch) {
+          montoEfectivo = parseFloat(efMatch[1]);
+          montoDigital = parseFloat(digMatch[1]);
+        } else {
+          // Fallback a regex textual legacy: 'efectivo: 20' / 'digital: 21.4'
+          const legacyEf = ref.match(/(?:efectivo|ef)\s*[:=]\s*(?:bs\.?\s*)?([0-9]+(?:[.,][0-9]+)?)/i);
+          const legacyDig = ref.match(/(?:digital|qr|tarjeta|dig)\s*[:=]\s*(?:bs\.?\s*)?([0-9]+(?:[.,][0-9]+)?)/i);
+          if (legacyEf) montoEfectivo = parseFloat(legacyEf[1].replace(',', '.'));
+          if (legacyDig) montoDigital = parseFloat(legacyDig[1].replace(',', '.'));
+        }
+      }
+
+      const sumaPartes = parseFloat((montoEfectivo + montoDigital).toFixed(2));
+      const diferencia = parseFloat((sumaPartes - totalAPagar).toFixed(2));
+
+      if (diferencia < -0.01) {
+        throw new AppError(
+          `El desglose de pago mixto (Efectivo: Bs. ${montoEfectivo.toFixed(2)} + Digital: Bs. ${montoDigital.toFixed(2)} = Bs. ${sumaPartes.toFixed(2)}) no cubre el total de Bs. ${totalAPagar.toFixed(2)}`,
+          400
+        );
+      }
+
+      montoRecibido = sumaPartes;
+      vuelto = Math.max(0, diferencia);
     }
 
     const pagoRegistrado = await this.paymentRepo.processPayment({
@@ -64,6 +105,8 @@ export class PaymentService {
       metodo_pago: dto.metodo_pago,
       monto: totalAPagar,
       monto_recibido: montoRecibido,
+      monto_efectivo: montoEfectivo,
+      monto_digital: montoDigital,
       vuelto,
       referencia: dto.referencia || null
     });
@@ -89,7 +132,7 @@ export class PaymentService {
       pedido_id: order.pedido_id,
       numero_orden: order.numero_orden,
       sucursal: {
-        nombre: (order as any).sucursal_nombre || 'PolloPOS - Sucursal Centro',
+        nombre: (order as any).sucursal_nombre || 'Pollo que hace pollo - Sucursal Centro',
         direccion: 'Av. Principal #123',
         telefono: '+591 70012345'
       },
@@ -110,6 +153,8 @@ export class PaymentService {
       pago: {
         metodo: ultimoPago?.metodo_pago || 'efectivo',
         monto_recibido: parseFloat(String(ultimoPago?.monto_recibido || order.total)),
+        monto_efectivo: parseFloat(String(ultimoPago?.monto_efectivo || 0)),
+        monto_digital: parseFloat(String(ultimoPago?.monto_digital || 0)),
         vuelto: parseFloat(String(ultimoPago?.vuelto || 0)),
         referencia: ultimoPago?.referencia || null
       }

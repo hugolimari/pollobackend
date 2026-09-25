@@ -6,9 +6,11 @@ export class ReportRepository {
     total_ventas: number;
     cantidad_pedidos: number;
     ticket_promedio: number;
+    ventas_efectivo: number;
+    ventas_tarjeta: number;
+    ventas_qr: number;
     ventas_por_metodo: { metodo_pago: string; total: number }[];
   }> {
-    const targetDate = fecha || 'CURRENT_DATE';
     const dateClause = fecha ? `$1` : `CURRENT_DATE`;
     const params: any[] = fecha ? [fecha] : [];
 
@@ -36,7 +38,7 @@ export class ReportRepository {
     const cantidadPedidos = parseInt(totalsRes.rows[0]?.cantidad_pedidos || '0', 10);
     const ticketPromedio = cantidadPedidos > 0 ? totalVentas / cantidadPedidos : 0;
 
-    // Desglose por método de pago
+    // Desglose por método de pago y desglose contable estricto (efectivo vs digital)
     let paymentParams: any[] = fecha ? [fecha] : [];
     let paymentSucursal = '';
     if (sucursal_id) {
@@ -60,11 +62,40 @@ export class ReportRepository {
       paymentParams
     );
 
+    // Sumatorias exactas de efectivo y digital
+    const splitRes = await query<{
+      ventas_efectivo: string;
+      ventas_tarjeta: string;
+      ventas_qr: string;
+    }>(
+      `SELECT 
+         COALESCE(SUM(pg.monto_efectivo), 0) as ventas_efectivo,
+         COALESCE(SUM(CASE WHEN pg.metodo_pago = 'tarjeta' THEN pg.monto ELSE 0 END), 0) as ventas_tarjeta,
+         COALESCE(SUM(
+           CASE 
+             WHEN pg.metodo_pago = 'qr' THEN pg.monto 
+             WHEN pg.metodo_pago = 'mixto' THEN pg.monto_digital 
+             ELSE 0 
+           END
+         ), 0) as ventas_qr
+       FROM pagos pg
+       INNER JOIN pedidos ped ON pg.pedido_id = ped.pedido_id
+       WHERE ped.estado_pago = 'pagado'
+         AND DATE(pg.creado_en) = ${dateClause}
+         ${paymentSucursal}`,
+      paymentParams
+    );
+
+    const splitRow = splitRes.rows[0];
+
     return {
       fecha: fecha || new Date().toISOString().split('T')[0],
       total_ventas: totalVentas,
       cantidad_pedidos: cantidadPedidos,
       ticket_promedio: parseFloat(ticketPromedio.toFixed(2)),
+      ventas_efectivo: parseFloat(String(splitRow?.ventas_efectivo || 0)),
+      ventas_tarjeta: parseFloat(String(splitRow?.ventas_tarjeta || 0)),
+      ventas_qr: parseFloat(String(splitRow?.ventas_qr || 0)),
       ventas_por_metodo: methodsRes.rows.map(r => ({
         metodo_pago: r.metodo_pago,
         total: parseFloat(r.total)

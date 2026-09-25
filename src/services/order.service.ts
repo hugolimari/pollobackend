@@ -74,7 +74,7 @@ export class OrderService {
 
     subtotal = parseFloat(subtotal.toFixed(2));
 
-    // 3. Validar código de descuento si fue provisto (RF10)
+    // 3. Validar y calcular descuento (Soporta Código Promo, Porcentaje o Monto Fijo)
     let descuentoId: number | null = null;
     let montoDescuento = 0;
 
@@ -92,9 +92,15 @@ export class OrderService {
       } else {
         montoDescuento = Math.min(valor, subtotal);
       }
+    } else if (dto.descuento_porcentaje !== undefined && dto.descuento_porcentaje > 0) {
+      // Descuento rápido desde botones de la interfaz (0%, 5%, 10%, 15%, 20%, 100%)
+      const pct = Math.min(100, Math.max(0, dto.descuento_porcentaje));
+      montoDescuento = parseFloat(((subtotal * pct) / 100).toFixed(2));
+    } else if (dto.monto_descuento !== undefined && dto.monto_descuento > 0) {
+      montoDescuento = Math.min(dto.monto_descuento, subtotal);
     }
 
-    const total = parseFloat((subtotal - montoDescuento).toFixed(2));
+    const total = parseFloat(Math.max(0, subtotal - montoDescuento).toFixed(2));
 
     // 4. Asignar número de orden correlativo para hoy (RF11)
     const numeroOrden = await this.orderRepo.getNextOrderNumber(sucursal_id);
@@ -135,7 +141,7 @@ export class OrderService {
   }
 
   async updateStatus(pedido_id: number, dto: ActualizarEstadoPedidoDto) {
-    const validStates: EstadoPedido[] = ['en_cocina', 'listo', 'entregado', 'cancelado'];
+    const validStates: EstadoPedido[] = ['en_cocina', 'cocina', 'listo', 'entregado', 'cancelado'];
     if (!validStates.includes(dto.estado)) {
       throw new AppError(`Estado inválido. Valores permitidos: ${validStates.join(', ')}`, 400);
     }

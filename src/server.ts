@@ -5,18 +5,18 @@ const PORT = ENV.PORT;
 
 const server = app.listen(PORT, () => {
   console.log('====================================================');
-  console.log(`🍗 PolloPOS Backend API iniciado con éxito`);
-  console.log(`🚀 Servidor escuchando en: http://localhost:${PORT}`);
-  console.log(`📡 Rutas base de la API: http://localhost:${PORT}/api`);
-  console.log(`⚙️  Entorno: ${ENV.NODE_ENV}`);
+  console.log(`[INFO] PolloPOS Backend API iniciado con éxito`);
+  console.log(`[HTTP] Servidor escuchando en: http://localhost:${PORT}`);
+  console.log(`[API]  Rutas base de la API: http://localhost:${PORT}/api`);
+  console.log(`[ENV]  Entorno: ${ENV.NODE_ENV}`);
   console.log('====================================================');
 });
 
 // Manejo de apagado graceful
 const handleShutdown = () => {
-  console.log('\n🛑 Cerrando servidor HTTP y conexiones de PolloPOS...');
+  console.log('\n[SHUTDOWN] Cerrando servidor HTTP y conexiones de PolloPOS...');
   server.close(() => {
-    console.log('✅ Servidor cerrado correctamente.');
+    console.log('[OK] Servidor cerrado correctamente.');
     process.exit(0);
   });
 };

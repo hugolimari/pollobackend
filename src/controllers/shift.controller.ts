@@ -52,6 +52,34 @@ export class ShiftController {
     }
   }
 
+  static async addMovement(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const usuarioId = req.user!.usuario_id;
+      const movement = await shiftService.addCashMovement(usuarioId, req.body);
+      return res.status(201).json({
+        success: true,
+        mensaje: `Movimiento de caja chica (${movement.tipo}) registrado exitosamente`,
+        movimiento: movement
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getMovements(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const usuarioId = req.user!.usuario_id;
+      const turnoId = req.params.id ? parseInt(req.params.id, 10) : undefined;
+      const movements = await shiftService.getMovements(turnoId, usuarioId);
+      return res.json({
+        success: true,
+        movimientos: movements
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   static async getHistory(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const sucursalId = req.query.sucursal_id ? parseInt(String(req.query.sucursal_id), 10) : undefined;
@@ -61,6 +89,32 @@ export class ShiftController {
       return res.json({
         success: true,
         turnos: history
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getSummary(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const turnoId = parseInt(req.params.id, 10);
+      const summary = await shiftService.getShiftSummary(turnoId);
+      return res.json({
+        success: true,
+        resumen: summary
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  static async getActiveSummary(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const usuarioId = req.user!.usuario_id;
+      const summary = await shiftService.getActiveShiftSummary(usuarioId);
+      return res.json({
+        success: true,
+        resumen: summary
       });
     } catch (error) {
       next(error);

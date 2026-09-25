@@ -3,6 +3,12 @@ import { ENV } from './env.js';
 
 const { Pool } = pg;
 
+if (ENV.DATABASE_URL.startsWith('http://') || ENV.DATABASE_URL.startsWith('https://')) {
+  console.warn(
+    '[ADVERTENCIA] DATABASE_URL parece ser una URL HTTP/REST y no una cadena de conexión PostgreSQL (postgresql://user:pass@host:port/db).'
+  );
+}
+
 const isCloudDb = ENV.DATABASE_URL.includes('supabase') || 
                   ENV.DATABASE_URL.includes('neon.tech') || 
                   ENV.DATABASE_URL.includes('sslmode=require') ||

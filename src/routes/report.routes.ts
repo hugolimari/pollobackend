@@ -5,20 +5,34 @@ import { requireRole } from '../middlewares/role.middleware.js';
 
 const router = Router();
 
-// RNF09: Solo los usuarios con rol de administrador pueden acceder a reportes
 router.use(authenticateJwt);
-router.use(requireRole(['admin']));
 
-// RF20: Total de ventas del día
-router.get('/diario', ReportController.getDailySales);
+// RF20: Total de ventas y métricas del día (Admin y Cajero en turno)
+router.get(
+  '/diario',
+  requireRole(['admin', 'cajero']),
+  ReportController.getDailySales
+);
 
-// RF21: Producto más vendido en un período
-router.get('/mas-vendidos', ReportController.getBestSellers);
+// RF23: Historial de cierres de caja por turno (Admin y Cajero)
+router.get(
+  '/turnos',
+  requireRole(['admin', 'cajero']),
+  ReportController.getShiftsHistory
+);
 
-// RF22: Horas de mayor demanda (horas pico)
-router.get('/horas-pico', ReportController.getPeakHours);
+// RF21: Ranking de productos más vendidos en un período (Inteligencia de Negocios - Solo Administrador: RNF09)
+router.get(
+  '/mas-vendidos',
+  requireRole(['admin']),
+  ReportController.getBestSellers
+);
 
-// RF23: Historial de cierres de caja por turno
-router.get('/turnos', ReportController.getShiftsHistory);
+// RF22: Horas de mayor demanda / horas pico (Solo Administrador: RNF09)
+router.get(
+  '/horas-pico',
+  requireRole(['admin']),
+  ReportController.getPeakHours
+);
 
 export default router;

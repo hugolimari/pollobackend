@@ -17,6 +17,7 @@ export interface Rol {
 export interface Usuario {
   usuario_id: number;
   sucursal_id: number;
+  sucursal_nombre?: string;
   rol_id: number;
   rol_nombre?: RolNombre;
   nombre_completo: string;
@@ -53,6 +54,7 @@ export interface Producto {
   descripcion?: string | null;
   precio: number | string;
   disponible: boolean;
+  imagen_url?: string | null;
   imagen_emoji?: string | null;
   creado_en: Date;
   actualizado_en: Date;
@@ -61,6 +63,7 @@ export interface Producto {
 export interface Turno {
   turno_id: number;
   sucursal_id: number;
+  sucursal_nombre?: string;
   usuario_id: number;
   cajero_nombre?: string;
   fondo_inicial: number | string;
@@ -70,6 +73,19 @@ export interface Turno {
   efectivo_contado?: number | string | null;
   diferencia?: number | string | null;
   estado: 'abierto' | 'cerrado';
+}
+
+export type TipoMovimientoCaja = 'INGRESO' | 'EGRESO';
+
+export interface MovimientoCaja {
+  movimiento_id: number;
+  turno_id: number;
+  usuario_id: number;
+  cajero_nombre?: string;
+  tipo: TipoMovimientoCaja;
+  monto: number | string;
+  concepto: string;
+  creado_en: Date;
 }
 
 export interface Mesa {
@@ -90,7 +106,7 @@ export interface Descuento {
 }
 
 export type TipoEntrega = 'mesa' | 'para_llevar';
-export type EstadoPedido = 'en_cocina' | 'listo' | 'entregado' | 'cancelado';
+export type EstadoPedido = 'en_cocina' | 'cocina' | 'listo' | 'entregado' | 'cancelado';
 export type EstadoPago = 'pendiente' | 'pagado' | 'cancelado';
 
 export interface Pedido {
@@ -137,6 +153,8 @@ export interface Pago {
   metodo_pago: MetodoPago;
   monto: number | string;
   monto_recibido: number | string;
+  monto_efectivo: number | string;
+  monto_digital: number | string;
   vuelto: number | string;
   referencia?: string | null;
   creado_en: Date;

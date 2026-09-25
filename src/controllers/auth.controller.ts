@@ -7,7 +7,9 @@ const authService = new AuthService();
 export class AuthController {
   static async login(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { nombre_usuario, password, pin_rapido } = req.body;
+      const nombre_usuario = req.body.nombre_usuario || req.body.usuario || req.body.username;
+      const password = req.body.password || req.body.contrasena || req.body.pass;
+      const pin_rapido = req.body.pin_rapido || req.body.pin;
 
       if (pin_rapido) {
         const result = await authService.loginWithPin(pin_rapido);

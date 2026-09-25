@@ -8,6 +8,8 @@ export class PaymentRepository {
     metodo_pago: MetodoPago;
     monto: number;
     monto_recibido: number;
+    monto_efectivo: number;
+    monto_digital: number;
     vuelto: number;
     referencia?: string | null;
   }): Promise<Pago> {
@@ -18,8 +20,9 @@ export class PaymentRepository {
 
       const paymentSql = `
         INSERT INTO pagos (
-          pedido_id, turno_id, metodo_pago, monto, monto_recibido, vuelto, referencia
-        ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+          pedido_id, turno_id, metodo_pago, monto, monto_recibido,
+          monto_efectivo, monto_digital, vuelto, referencia
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING *
       `;
       const paymentRes = await client.query<Pago>(paymentSql, [
@@ -28,11 +31,13 @@ export class PaymentRepository {
         paymentData.metodo_pago,
         paymentData.monto,
         paymentData.monto_recibido,
+        paymentData.monto_efectivo,
+        paymentData.monto_digital,
         paymentData.vuelto,
         paymentData.referencia || null
       ]);
 
-      // Marcar pedido como pagado
+      // Marcar pedido como pagado y registrar hora de pago
       await client.query(
         `UPDATE pedidos SET estado_pago = 'pagado' WHERE pedido_id = $1`,
         [paymentData.pedido_id]
